@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="ASCII"?>
+<model:MDescriptors xmlns:model="http://www.silabs.com/ss/Studio.ecore">
+  <descriptors name="light-switch-app">
+    <properties key="projectCommon.sdkId" value="com.silabs.sdk.stack.sisdk:2025.12.0._-1413323800"/>
+    <properties key="universalConfig.relativeWorkspacePath" value="..\light-switch-app.slcw"/>
+    <properties key="universalConfig.generationDirectory" value=""/>
+    <properties key="universalConfig.toolchainCompatibility" value="iar llvm gcc"/>
+    <properties key="projectCommon.boardIds" value="brd4407a:0.0.0.A06 brd4002a:0.0.0.A06"/>
+    <properties key="projectCommon.kitId" value=""/>
+    <properties key="projectCommon.partId" value="mcu.arm.si.mg301.simg301m104lil"/>
+    <properties key="universalConfig.projectTypeIds" value="visual-studio-code"/>
+    <properties key="projectCommon.overwriteCopiedSources" value="false"/>
+    <properties key="projectCommon.importModeId" value="COPY"/>
+    <properties key="universalConfig.compSelProjInstanceId" value="1771168215819"/>
+  </descriptors>
+</model:MDescriptors>

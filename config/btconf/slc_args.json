@@ -1,0 +1,6 @@
+{
+  "sdkRoot" : "C:/workspace/matter_extension/third_party/simplicity_sdk/",
+  "apackRoot" : "C:\\workspace\\matter_extension\\third_party\\simplicity_sdk\\bluetooth_bgbuild",
+  "partOpn" : "simg301m104lil",
+  "boards" : "brd4407arevA06,brd4002arevA06"
+}

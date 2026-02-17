@@ -1,0 +1,261 @@
+diff --git a/third_party/matter_sdk/examples/light-switch-app/silabs/src/ShellCommands.cpp b/third_party/matter_sdk/examples/light-switch-app/silabs/src/ShellCommands.cpp
+index 1111111..2222222 100644
+--- a/third_party/matter_sdk/examples/light-switch-app/silabs/src/ShellCommands.cpp
++++ b/third_party/matter_sdk/examples/light-switch-app/silabs/src/ShellCommands.cpp
+@@ -17,6 +17,7 @@
+  *    limitations under the License.
+  */
+ #include <optional>
++#include <stdlib.h>
+ #if defined(ENABLE_CHIP_SHELL)
+ 
+ #include "BindingHandler.h"
+ #include "ShellCommands.h"
+ 
+ #include <app/clusters/bindings/BindingManager.h>
++#include <app/InteractionModelEngine.h>
++#include <app/ReadClient.h>
+ #include <lib/shell/Engine.h>
+ #include <lib/shell/commands/Help.h>
+ #include <platform/CHIPDeviceLayer.h>
++#include <system/SystemClock.h>
++#include <system/SystemLayer.h>
+ 
+ using namespace chip;
+ using namespace chip::app;
+ using namespace chip::app::Clusters;
+@@ -39,6 +44,96 @@ Engine sShellSwitchGroupsOnOffSubCommands;
+ Engine sShellSwitchGroupsLevelControlSubCommands;
+ 
+ Engine sShellSwitchBindingSubCommands;
++
++struct SubscribeRequestData
++{
++    NodeId nodeId;
++    EndpointId endpointId;
++    ClusterId clusterId;
++    AttributeId attributeId;
++    FabricIndex fabricIndex;
++};
++
++class SwitchSubscribeCallback : public app::ReadClient::Callback
++{
++public:
++    void OnAttributeData(const app::ConcreteDataAttributePath & aPath, TLV::TLVReader * apData, const app::StatusIB & aStatus)
++        override
++    {
++        ChipLogProgress(NotSpecified, "Subscribe report for endpoint=%u cluster=0x%lx attribute=0x%lx status=%u", aPath.mEndpointId,
++                        static_cast<unsigned long>(aPath.mClusterId), static_cast<unsigned long>(aPath.mAttributeId),
++                        to_underlying(aStatus.mStatus));
++    }
++
++    void OnSubscriptionEstablished(SubscriptionId aSubscriptionId) override
++    {
++        ChipLogProgress(NotSpecified, "Subscription established with id=%" PRIu64, static_cast<uint64_t>(aSubscriptionId));
++    }
++
++    void OnDeallocatePaths(app::ReadPrepareParams && aReadPrepareParams) override
++    {
++        if (aReadPrepareParams.mpAttributePathParamsList != nullptr)
++        {
++            Platform::Delete[](aReadPrepareParams.mpAttributePathParamsList);
++            aReadPrepareParams.mpAttributePathParamsList    = nullptr;
++            aReadPrepareParams.mAttributePathParamsListSize = 0;
++        }
++    }
++
++    void OnError(CHIP_ERROR aError) override
++    {
++        ChipLogError(NotSpecified, "Subscribe request failed: %" CHIP_ERROR_FORMAT, aError.Format());
++    }
++
++    void OnDone(app::ReadClient * apReadClient) override
++    {
++        ChipLogProgress(NotSpecified, "Subscribe client done");
++        gSubscribeClient.reset();
++    }
++};
++
++SwitchSubscribeCallback gSubscribeCallback;
++std::unique_ptr<app::ReadClient> gSubscribeClient;
++uint32_t gToggleIntervalSeconds = 0;
++bool gToggleActive              = false;
++
++void SwitchSubscribeWorker(intptr_t context)
++{
++    VerifyOrReturn(context != 0, ChipLogError(NotSpecified, "SwitchSubscribeWorker - Invalid work data"));
++
++    SubscribeRequestData * request = reinterpret_cast<SubscribeRequestData *>(context);
++    app::AttributePathParams * attributePath = Platform::New<app::AttributePathParams[1]>();
++    if (attributePath == nullptr)
++    {
++        ChipLogError(NotSpecified, "Failed to allocate attribute path for subscribe");
++        Platform::Delete(request);
++        return;
++    }
++
++    attributePath[0] = app::AttributePathParams(request->endpointId, request->clusterId, request->attributeId);
++    app::ReadPrepareParams readParams;
++    readParams.mpAttributePathParamsList    = attributePath;
++    readParams.mAttributePathParamsListSize = 1;
++    readParams.mMinIntervalFloorSeconds     = 5;
++    readParams.mMaxIntervalCeilingSeconds   = 30;
++
++    auto * imEngine = app::InteractionModelEngine::GetInstance();
++    if (imEngine == nullptr || imEngine->GetExchangeManager() == nullptr)
++    {
++        ChipLogError(NotSpecified, "Interaction model engine not available, cannot subscribe");
++        Platform::Delete[](attributePath);
++        Platform::Delete(request);
++        return;
++    }
++
++    gSubscribeClient = Platform::MakeUnique<app::ReadClient>(imEngine, imEngine->GetExchangeManager(), gSubscribeCallback,
++                                                             app::ReadClient::InteractionType::Subscribe);
++
++    if (gSubscribeClient == nullptr)
++    {
++        ChipLogError(NotSpecified, "Failed to allocate subscribe ReadClient");
++        Platform::Delete[](attributePath);
++        Platform::Delete(request);
++        return;
++    }
++
++    ScopedNodeId peerId(request->nodeId, request->fabricIndex);
++    CHIP_ERROR err = gSubscribeClient->SendAutoResubscribeRequest(peerId, std::move(readParams));
++    if (err != CHIP_NO_ERROR)
++    {
++        ChipLogError(NotSpecified, "Failed to send subscribe request: %" CHIP_ERROR_FORMAT, err.Format());
++        gSubscribeClient.reset();
++    }
++
++    Platform::Delete(request);
++}
++
++void ScheduleToggleCommand()
++{
++    BindingCommandData * data = Platform::New<BindingCommandData>();
++    if (data == nullptr)
++    {
++        ChipLogError(NotSpecified, "Failed to allocate toggle command data");
++        return;
++    }
++
++    data->commandId = Clusters::OnOff::Commands::Toggle::Id;
++    data->clusterId = Clusters::OnOff::Id;
++
++    DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
++}
++
++void TogglePeriodicTimerCallback(System::Layer * aLayer, void * aAppState)
++{
++    if (!gToggleActive || gToggleIntervalSeconds == 0)
++    {
++        return;
++    }
++
++    ScheduleToggleCommand();
++
++    CHIP_ERROR err =
++        DeviceLayer::SystemLayer().StartTimer(System::Clock::Seconds32(gToggleIntervalSeconds), TogglePeriodicTimerCallback, nullptr);
++    if (err != CHIP_NO_ERROR)
++    {
++        ChipLogError(NotSpecified, "Failed to rearm toggle timer: %" CHIP_ERROR_FORMAT, err.Format());
++    }
++}
+ 
+ /********************************************************
+  * Switch shell functions
+  *********************************************************/
+@@ -96,12 +191,43 @@ CHIP_ERROR OffSwitchCommandHandler(int argc, char ** argv)
+     return CHIP_NO_ERROR;
+ }
+ 
+ CHIP_ERROR ToggleSwitchCommandHandler(int argc, char ** argv)
+ {
+-    BindingCommandData * data = Platform::New<BindingCommandData>();
+-    data->commandId           = Clusters::OnOff::Commands::Toggle::Id;
+-    data->clusterId           = Clusters::OnOff::Id;
++    ScheduleToggleCommand();
++    return CHIP_NO_ERROR;
++}
++
++CHIP_ERROR TogglePeriodicSwitchCommandHandler(int argc, char ** argv)
++{
++    VerifyOrReturnError(argc == 1, CHIP_ERROR_INVALID_ARGUMENT);
++
++    char * endPtr = nullptr;
++    unsigned long intervalSeconds = strtoul(argv[0], &endPtr, 10);
++    VerifyOrReturnError(endPtr != nullptr && *endPtr == '\0', CHIP_ERROR_INVALID_ARGUMENT);
++
++    DeviceLayer::SystemLayer().CancelTimer(TogglePeriodicTimerCallback, nullptr);
++
++    if (intervalSeconds == 0)
++    {
++        gToggleActive          = false;
++        gToggleIntervalSeconds = 0;
++        ChipLogProgress(NotSpecified, "Periodic toggle disabled");
++        return CHIP_NO_ERROR;
++    }
++
++    gToggleIntervalSeconds = static_cast<uint32_t>(intervalSeconds);
++    gToggleActive          = true;
++    ScheduleToggleCommand();
+ 
+-    DeviceLayer::PlatformMgr().ScheduleWork(SwitchWorkerFunction, reinterpret_cast<intptr_t>(data));
++    CHIP_ERROR err =
++        DeviceLayer::SystemLayer().StartTimer(System::Clock::Seconds32(gToggleIntervalSeconds), TogglePeriodicTimerCallback, nullptr);
++    if (err != CHIP_NO_ERROR)
++    {
++        ChipLogError(NotSpecified, "Failed to start toggle timer: %" CHIP_ERROR_FORMAT, err.Format());
++        return err;
++    }
+     return CHIP_NO_ERROR;
+ }
+ 
+@@ -130,6 +256,21 @@ CHIP_ERROR BindingUnicastBindCommandHandler(int argc, char ** argv)
+     DeviceLayer::PlatformMgr().ScheduleWork(BindingWorkerFunction, reinterpret_cast<intptr_t>(entry));
+     return CHIP_NO_ERROR;
+ }
++
++/********************************************************
++ * Subscribe switch shell functions
++ *********************************************************/
++
++CHIP_ERROR SubscribeRequestCommandHandler(int argc, char ** argv)
++{
++    VerifyOrReturnError(argc == 5, CHIP_ERROR_INVALID_ARGUMENT);
++
++    SubscribeRequestData * request = Platform::New<SubscribeRequestData>();
++    request->nodeId                = static_cast<NodeId>(strtoull(argv[0], nullptr, 10));
++    request->endpointId            = static_cast<EndpointId>(strtoul(argv[1], nullptr, 10));
++    request->clusterId             = static_cast<ClusterId>(strtoul(argv[2], nullptr, 10));
++    request->attributeId           = static_cast<AttributeId>(strtoul(argv[3], nullptr, 10));
++    request->fabricIndex           = static_cast<FabricIndex>(strtoul(argv[4], nullptr, 10));
++
++    DeviceLayer::PlatformMgr().ScheduleWork(SwitchSubscribeWorker, reinterpret_cast<intptr_t>(request));
++    return CHIP_NO_ERROR;
++}
+ 
+ /********************************************************
+  * Groups switch shell functions
+  *********************************************************/
+@@ -447,7 +588,9 @@ void RegisterSwitchCommands()
+         { &OnOffHelpHandler, "help", "Usage : switch ononff <subcommand>" },
+         { &OnSwitchCommandHandler, "on", "Sends on command to bound lighting app" },
+         { &OffSwitchCommandHandler, "off", "Sends off command to bound lighting app" },
+-        { &ToggleSwitchCommandHandler, "toggle", "Sends toggle command to bound lighting app" }
++        { &ToggleSwitchCommandHandler, "toggle", "Sends toggle command to bound lighting app" },
++        { &TogglePeriodicSwitchCommandHandler, "toggle-periodic",
++          "Usage: switch onoff toggle-periodic <interval-seconds> (0 to stop)" }
+     };
+@@ -468,6 +611,8 @@ void RegisterSwitchCommands()
+         { &SwitchHelpHandler, "help", "Usage: switch <subcommand>" },
+         { &OnOffSwitchCommandHandler, "onoff", " Usage: switch onoff <subcommand>" },
+         { &LevelControlSwitchCommandHandler, "levelcontrol", " Usage: switch levelcontrol <subcommand>" },
+         { &GroupsSwitchCommandHandler, "groups", "Usage: switch groups <subcommand>" },
+-        { &BindingSwitchCommandHandler, "binding", "Usage: switch binding <subcommand>" }
++        { &BindingSwitchCommandHandler, "binding", "Usage: switch binding <subcommand>" },
++        { &SubscribeRequestCommandHandler, "subscribe",
++          "Usage: switch subscribe <nodeId> <endpoint> <cluster> <attribute> <fabricId>" }
+     };

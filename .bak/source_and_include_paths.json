@@ -1,0 +1,59 @@
+{
+  "matter_sdk_paths": {
+    "source": [
+      "third_party/matter_sdk/examples/light-switch-app/silabs/src/AppTask.cpp",
+      "third_party/matter_sdk/examples/platform/silabs/main.cpp",
+      "third_party/matter_sdk/examples/light-switch-app/silabs/src/DataModelCallbacks.cpp",
+      "third_party/matter_sdk/examples/light-switch-app/silabs/src/BindingHandler.cpp",
+      "third_party/matter_sdk/examples/light-switch-app/silabs/src/LightSwitchMgr.cpp",
+      "third_party/matter_sdk/examples/light-switch-app/silabs/src/ShellCommands.cpp"
+    ],
+    "include": [
+      "third_party/matter_sdk/examples/light-switch-app/silabs/include\\AppConfig.h",
+      "third_party/matter_sdk/examples/light-switch-app/silabs/include\\AppEvent.h",
+      "third_party/matter_sdk/examples/light-switch-app/silabs/include\\AppTask.h",
+      "third_party/matter_sdk/examples/light-switch-app/silabs/include\\CHIPProjectConfig.h",
+      "third_party/matter_sdk/examples/light-switch-app/silabs/include\\BindingHandler.h",
+      "third_party/matter_sdk/examples/light-switch-app/silabs/include\\LightSwitchMgr.h",
+      "third_party/matter_sdk/examples/light-switch-app/silabs/include\\ShellCommands.h"
+    ]
+  },
+  "customer_paths": {
+    "source": [
+      "c:\\workspace\\matter_project\\switch\\src\\AppTask.cpp",
+      "c:\\workspace\\matter_project\\switch\\src\\main.cpp",
+      "c:\\workspace\\matter_project\\switch\\src\\DataModelCallbacks.cpp",
+      "c:\\workspace\\matter_project\\switch\\src\\BindingHandler.cpp",
+      "c:\\workspace\\matter_project\\switch\\src\\LightSwitchMgr.cpp",
+      "c:\\workspace\\matter_project\\switch\\src\\ShellCommands.cpp"
+    ],
+    "include": [
+      "c:\\workspace\\matter_project\\switch\\include\\AppConfig.h",
+      "c:\\workspace\\matter_project\\switch\\include\\AppEvent.h",
+      "c:\\workspace\\matter_project\\switch\\include\\AppTask.h",
+      "c:\\workspace\\matter_project\\switch\\include\\CHIPProjectConfig.h",
+      "c:\\workspace\\matter_project\\switch\\include\\BindingHandler.h",
+      "c:\\workspace\\matter_project\\switch\\include\\LightSwitchMgr.h",
+      "c:\\workspace\\matter_project\\switch\\include\\ShellCommands.h"
+    ]
+  },
+  "backups_paths": {
+    "source": [
+      "c:\\workspace\\matter_project\\switch\\.bak\\original\\src\\AppTask.cpp",
+      "c:\\workspace\\matter_project\\switch\\.bak\\original\\src\\BindingHandler.cpp",
+      "c:\\workspace\\matter_project\\switch\\.bak\\original\\src\\DataModelCallbacks.cpp",
+      "c:\\workspace\\matter_project\\switch\\.bak\\original\\src\\LightSwitchMgr.cpp",
+      "c:\\workspace\\matter_project\\switch\\.bak\\original\\src\\main.cpp",
+      "c:\\workspace\\matter_project\\switch\\.bak\\original\\src\\ShellCommands.cpp"
+    ],
+    "include": [
+      "c:\\workspace\\matter_project\\switch\\.bak\\original\\include\\AppConfig.h",
+      "c:\\workspace\\matter_project\\switch\\.bak\\original\\include\\AppEvent.h",
+      "c:\\workspace\\matter_project\\switch\\.bak\\original\\include\\AppTask.h",
+      "c:\\workspace\\matter_project\\switch\\.bak\\original\\include\\BindingHandler.h",
+      "c:\\workspace\\matter_project\\switch\\.bak\\original\\include\\CHIPProjectConfig.h",
+      "c:\\workspace\\matter_project\\switch\\.bak\\original\\include\\LightSwitchMgr.h",
+      "c:\\workspace\\matter_project\\switch\\.bak\\original\\include\\ShellCommands.h"
+    ]
+  }
+}

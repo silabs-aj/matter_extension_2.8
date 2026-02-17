@@ -1,0 +1,10 @@
+{
+  "sdkRoot" : "C:/workspace/matter_extension/third_party/simplicity_sdk/",
+  "apackRoot" : "C:\\workspace\\matter_extension\\slc\\tools\\zap",
+  "partOpn" : "simg301m104lil",
+  "zcl.matterZclJsonFile" : "C:\\workspace\\matter_extension\\src\\app\\zap-templates\\zcl\\zcl.json",
+  "zcl.zigbeeZclJsonFile" : "C:\\workspace\\matter_extension\\third_party\\simplicity_sdk\\zigbee\\app\\zcl\\zcl-zap.json",
+  "boards" : "brd4407arevA06,brd4002arevA06",
+  "zcl.matterTemplateJsonFile" : "C:\\workspace\\matter_extension\\src\\app\\zap-templates\\app-templates.json",
+  "zcl.zigbeeTemplateJsonFile" : "C:\\workspace\\matter_extension\\third_party\\simplicity_sdk\\zigbee\\app\\framework\\gen-template\\gen-templates.json"
+}

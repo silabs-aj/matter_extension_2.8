@@ -1,0 +1,4 @@
+C:/workspace/matter_project/switch/cmake_gcc/build/CMakeFiles/slc.dir
+C:/workspace/matter_project/switch/cmake_gcc/build/CMakeFiles/light-switch-app.dir
+C:/workspace/matter_project/switch/cmake_gcc/build/CMakeFiles/edit_cache.dir
+C:/workspace/matter_project/switch/cmake_gcc/build/CMakeFiles/rebuild_cache.dir
